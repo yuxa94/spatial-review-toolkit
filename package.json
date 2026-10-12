@@ -1,0 +1,22 @@
+{
+  "name": "floorplan-spatial-review",
+  "version": "0.6.1",
+  "private": true,
+  "type": "module",
+  "description": "도면별 로컬 Three.js 공간 검토, 실내 PNG 캡처, 코멘트와 보행 동선",
+  "scripts": {
+    "start": "node server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "vendor": "node scripts/vendor.mjs",
+    "package": "python3 scripts/package.py"
+  },
+  "dependencies": {
+    "dxf-parser": "1.1.2",
+    "pdfjs-dist": "6.4.299",
+    "three": "0.186.1",
+    "web-ifc": "0.0.78"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12"
+  }
+}

@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#173c53" />
+  <title>공간 검토 · 도면 기반 3D</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23173c53'/%3E%3Cpath d='M6 11l10-6 10 6v12l-10 5-10-5z' fill='none' stroke='white' stroke-width='2'/%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">{"imports":{"three":"./vendor/three.module.js","three/addons/controls/OrbitControls.js":"./vendor/OrbitControls.js"}}</script>
+<link rel="stylesheet" href="comments.css"></head>
+<body>
+  <header class="header">
+    <div class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32"><path d="M4 10 16 4 28 10 16 16Z M4 10v13l12 6 12-6V10M16 16v13"/></svg></div>
+    <div class="brand"><h1>공간 검토</h1><p>도면 기반 검토 <span>도면 기반 3D 프로토타입</span></p></div>
+    <div class="header-end"><span class="status-dot"></span><span>로컬 실행</span><a class="quiet-button" href="import.html">도면 가져오기</a><button id="toggle-comments" class="quiet-button" aria-pressed="false" aria-controls="room-comments">코멘트</button><button id="info-button" class="quiet-button">모델 정보</button><button id="download-image" class="primary-button">화면 저장 <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar" aria-label="도면의 영역 목록">
+      <div class="sidebar-top"><div><h2>공간 목록</h2><p><strong id="region-count">—</strong>개 영역 · 객체별 구분</p></div><button id="show-all" class="text-button">전체 표시</button></div>
+      <label class="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="search" type="search" placeholder="공간 이름 검색" aria-label="공간 이름 검색" /></label>
+      <div id="region-list" class="region-list"></div>
+      <div class="source-card"><button id="open-plan" aria-label="원본 도면 크게 보기"><img alt="입력된 평면도"/><span>원본 도면 보기 <b aria-hidden="true">↗</b></span></button><p>전체 도면을 수동 추적한 검토용 모델</p></div>
+    </aside>
+    <main class="workspace" id="workspace" aria-label="3D 공간 뷰어">
+      <div id="canvas-container" tabindex="0" aria-label="3D 도면. 드래그하여 회전, 휠로 확대. 공간을 클릭하면 선택됩니다."></div>
+      <div id="labels" aria-label="공간 이름"></div>
+      <div class="view-toolbar" role="group" aria-label="시점 선택">
+        <button id="view-iso" class="active" aria-pressed="true">3D 조감도</button>
+        <button id="view-top" aria-pressed="false">평면</button>
+        <button id="view-reverse" aria-pressed="false">반대편</button>
+        <button id="focus-lounge">라운지 확대</button><span></span><button id="fit-view" title="전체 도면 맞추기">전체 맞춤</button>
+      </div>
+      <div class="view-caption"><span class="small-diamond"></span><div><b id="view-title">전체 도면</b><small id="view-subtitle">기존 공간 + 계획된 공용 시설</small></div></div>
+      <div class="settings-panel">
+        <label class="switch-row"><span>공간 이름</span><input type="checkbox" id="toggle-labels" checked /></label>
+        <label class="switch-row"><span>가구 표시</span><input type="checkbox" id="toggle-furniture" checked /></label>
+        <label class="switch-row"><span>원본 도면 겹치기</span><input type="checkbox" id="toggle-overlay" /></label>
+        <label class="range-row" id="overlay-range-row" hidden><span>도면 선명도 <output id="opacity-value">65%</output></span><input id="overlay-opacity" type="range" min="10" max="100" value="65" /></label>
+        <label class="range-row"><span>벽 표시 높이 <output id="wall-value">2.4m</output></span><input id="wall-height" type="range" min="0.1" max="3.6" step="0.1" value="2.4" /></label>
+        <small>높이를 낮춰 내부를 살펴보세요.</small>
+      </div>
+      <section id="detail-panel" class="detail-panel" hidden aria-live="polite">
+        <button id="close-detail" aria-label="선택 해제" class="close-button">×</button>
+        <div class="detail-category" id="detail-category"></div>
+        <h2 id="detail-title"></h2><p id="detail-en"></p>
+        <dl id="detail-stats"></dl><p id="detail-note" class="detail-note"></p>
+        <div class="detail-actions"><button id="open-studio">인테리어 뷰</button><button id="focus-region">선택 공간 보기</button><button id="isolate-region">이 영역만 표시</button></div>
+      </section>
+      <div class="orientation" aria-hidden="true"><svg id="orientation-arrow" viewBox="0 0 32 32"><path d="M16 2 23 26 16 22 9 26Z"/></svg><span>도면 상단</span></div>
+      <div class="canvas-footer"><span>드래그 회전 · 휠 확대 · 우클릭 이동</span><button id="assumptions-button">추정 축척 · 높이 가정 <span aria-hidden="true">ⓘ</span></button></div>
+      <div id="loading" class="loading"><div class="spinner"></div><strong>전체 도면을 구성하고 있습니다</strong><span>바닥 · 기둥 · 공간 구획 · 가구</span></div>
+      <div id="toast" class="toast" role="status" hidden></div>
+    </main><aside id="room-comments"></aside>
+  </div>
+  <dialog id="plan-dialog"><div class="dialog-header"><div><h2>입력된 원본 도면</h2><p>프로젝트 원본</p></div><button class="dialog-close" aria-label="닫기">×</button></div><div class="plan-image"><img alt="원본 평면도. 범례와 실별 면적표를 포함한 전체 이미지" /></div></dialog>
+  <dialog id="info-dialog"><div class="dialog-header"><div><h2>이 모델을 읽는 방법</h2><p>원본에서 확인한 정보와 가정을 구분했습니다.</p></div><button class="dialog-close" aria-label="닫기">×</button></div><div class="info-content"><div class="info-summary"><b>전체 도면을 살펴보는 첫 번째 테스트</b><p>구획·배치·동선의 입체적 이해와 영역별 선택을 위한 모델입니다. 실측 복원 또는 인테리어 완성 렌더가 아닙니다.</p></div><ul id="assumptions-list"></ul><div class="data-facts" id="data-facts"></div><button id="download-data" class="primary-button">모델 데이터 저장</button></div></dialog>
+  <dialog id="export-dialog"><div class="dialog-header"><div><h2>현재 화면 내보내기</h2><p>영역 이름과 추정 모델 표기가 포함된 PNG입니다.</p></div><button class="dialog-close" aria-label="닫기">×</button></div><div class="export-content"><img id="export-preview" alt="현재 시점에서 내보낸 3D 공간 이미지"/><a id="export-link" class="primary-button" download="spatial-review.png">PNG 다운로드</a><p>다운로드를 지원하지 않는 앱에서는 이미지를 우클릭해 저장하거나 일반 브라우저에서 열어 주세요.</p></div></dialog>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
